@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#F3F1FC">
+<title>情绪小精灵 · 记录此刻</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='46' fill='%23A98FE0'/%3E%3Ccircle cx='40' cy='44' r='5' fill='%23fff'/%3E%3Ccircle cx='60' cy='44' r='5' fill='%23fff'/%3E%3Cpath d='M38 60 q12 10 24 0' stroke='%23fff' stroke-width='4' fill='none' stroke-linecap='round'/%3E%3C/svg%3E">
+<style>
+:root{
+  --bg1:#F1EFFB; --bg2:#FBF7F1;
+  --ink:#3B3950; --muted:#8C8AA6;
+  --ui:#8F7FE0; --ui-deep:#6D5BD0; --ui-soft:#E9E5FA;
+  --card:#FFFFFF; --line:#EDEBF6;
+  --happy:#FFC04A; --happy-deep:#E8A63B;
+  --angry:#FF7A66; --angry-deep:#F0604C;
+  --sad:#6FA3E8;   --sad-deep:#5589D2;
+  --calm:#6FCFA0;  --calm-deep:#4FB785;
+  --anx:#A98FE0;   --anx-deep:#8F6FD0;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+html{-webkit-text-size-adjust:100%;}
+body{
+  font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei","Helvetica Neue",sans-serif;
+  color:var(--ink);
+  background:linear-gradient(175deg,var(--bg1) 0%,var(--bg2) 70%);
+  min-height:100vh;
+  -webkit-font-smoothing:antialiased;
+  overflow-x:hidden;
+}
+.view{display:none;min-height:100vh;}
+.view.active{display:block;}
+button{font-family:inherit;border:none;background:none;cursor:pointer;color:inherit;}
+textarea{font-family:inherit;}
+
+/* ============ 通用顶栏 ============ */
+.topbar{display:flex;align-items:center;gap:4px;padding:calc(env(safe-area-inset-top,0px) + 14px) 10px 6px;}
+.back{width:40px;height:40px;display:flex;align-items:center;justify-content:center;border-radius:12px;color:var(--ink);}
+.back:active{background:var(--ui-soft);}
+.back svg{width:22px;height:22px;}
+.topbar .title{font-size:17px;font-weight:700;flex:1;text-align:center;margin-right:40px;}
+.topbar .pad{width:40px;}
+
+/* ============ 首页 ============ */
+.home{padding:calc(env(safe-area-inset-top,0px) + 18px) 14px calc(env(safe-area-inset-bottom,0px) + 24px);}
+.home-head{display:flex;justify-content:space-between;align-items:flex-start;padding:6px 8px 14px;}
+.warm{font-size:19px;font-weight:800;line-height:1.45;letter-spacing:.2px;}
+.warm small{display:block;font-size:13px;color:var(--muted);font-weight:500;margin-top:4px;letter-spacing:0;}
+.records-btn{flex:0 0 auto;display:flex;align-items:center;gap:5px;font-size:12.5px;font-weight:600;color:var(--ui-deep);background:#fff;border:1px solid var(--line);border-radius:999px;padding:8px 12px;box-shadow:0 2px 8px rgba(90,80,160,.06);}
+.records-btn:active{background:var(--ui-soft);}
+.records-btn svg{width:15px;height:15px;}
+
+.spr-row{display:flex;justify-content:center;gap:16px;padding:8px 6px;}
+.spr{width:98px;display:flex;flex-direction:column;align-items:center;cursor:pointer;user-select:none;-webkit-user-select:none;}
+.spr .spr-body{width:100%;aspect-ratio:1;position:relative;}
+.spr .spr-body svg{width:100%;height:100%;overflow:visible;}
+.spr .spr-name{margin-top:8px;font-size:14px;font-weight:700;color:var(--ink);}
+.spr .spr-hint{font-size:11px;color:var(--muted);margin-top:1px;}
+.spr:active{transform:scale(.94);}
+.spr .spr-body{animation:float 4.2s ease-in-out infinite;}
+.spr.s-happy .spr-body{animation-duration:3.4s;}
+.spr.s-angry .spr-body{animation-duration:2.4s;}
+.spr.s-sad .spr-body{animation-duration:6s;}
+.spr.s-calm .spr-body{animation-duration:5.6s;}
+.spr.s-anx .spr-body{animation-duration:2.2s;}
+@keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-7px)}}
+
+.home-foot{text-align:center;color:var(--muted);font-size:12px;padding-top:22px;line-height:1.7;}
+.home-foot b{color:var(--ui-deep);font-weight:600;}
+
+/* ============ 记录页 ============ */
+.record{min-height:100vh;display:flex;flex-direction:column;padding-bottom:calc(env(safe-area-inset-bottom,0px) + 20px);}
+.rec-em{display:flex;flex-direction:column;align-items:center;padding:10px 0 4px;}
+.rec-em .big{width:150px;height:150px;}
+.rec-em .big svg{width:100%;height:100%;overflow:visible;animation:float 3.6s ease-in-out infinite;}
+.rec-em .rec-title{font-size:20px;font-weight:800;margin-top:6px;}
+.rec-em .rec-sub{font-size:13px;color:var(--muted);margin-top:3px;}
+.rec-qs{flex:1;padding:12px 16px;}
+.qcard{background:var(--card);border-radius:18px;padding:14px 16px;margin-bottom:12px;box-shadow:0 2px 12px rgba(90,80,160,.05);border:1px solid var(--line);}
+.qcard .q-label{display:flex;align-items:center;gap:8px;font-size:14px;font-weight:700;margin-bottom:8px;}
+.qcard .q-num{width:20px;height:20px;flex:0 0 auto;border-radius:50%;color:#fff;font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center;}
+.qcard textarea{width:100%;min-height:74px;border:none;outline:none;resize:none;font-size:16px;line-height:1.6;color:var(--ink);background:transparent;}
+.qcard textarea::placeholder{color:#C4C2D8;}
+.save-btn{display:block;width:calc(100% - 32px);margin:6px auto 0;padding:15px;border-radius:16px;color:#fff;font-size:16px;font-weight:700;text-align:center;}
+.save-btn:active{opacity:.88;transform:scale(.99);}
+.save-btn:disabled{opacity:.55;}
+
+/* ============ 保存反馈浮层 ============ */
+.feedback{position:fixed;inset:0;z-index:50;display:none;flex-direction:column;align-items:center;justify-content:center;background:rgba(250,248,252,.92);backdrop-filter:blur(6px);}
+.feedback.show{display:flex;}
+.feedback .fb-spr{width:170px;height:170px;}
+.feedback .fb-spr svg{width:100%;height:100%;overflow:visible;animation:pop .6s cubic-bezier(.34,1.56,.64,1) both;}
+@keyframes pop{0%{transform:scale(.4);opacity:0}60%{transform:scale(1.12)}100%{transform:scale(1);opacity:1}}
+.feedback .fb-text{font-size:16px;font-weight:700;margin-top:18px;padding:0 34px;text-align:center;line-height:1.6;}
+.feedback .fb-sub{font-size:13px;color:var(--muted);margin-top:8px;}
+
+/* ============ 日历页 ============ */
+.cal-page{padding:8px 14px calc(env(safe-area-inset-bottom,0px) + 24px);}
+.cal{background:var(--card);border-radius:20px;padding:16px 14px 14px;box-shadow:0 2px 14px rgba(90,80,160,.06);border:1px solid var(--line);}
+.cal-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;}
+.cal-head .cal-title{font-size:16px;font-weight:800;}
+.cal-nav{display:flex;gap:6px;}
+.cal-nav button{width:34px;height:34px;border-radius:10px;display:flex;align-items:center;justify-content:center;color:var(--ink);}
+.cal-nav button:active{background:var(--ui-soft);}
+.cal-nav svg{width:18px;height:18px;}
+.cal-week{display:grid;grid-template-columns:repeat(7,1fr);text-align:center;color:var(--muted);font-size:12px;margin:8px 0 4px;}
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:3px;}
+.day{aspect-ratio:1;display:flex;flex-direction:column;align-items:center;justify-content:center;border-radius:12px;font-size:13px;position:relative;color:var(--ink);}
+.day.empty{visibility:hidden;}
+.day.out{color:#C9C7DB;}
+.day.today{box-shadow:inset 0 0 0 1.5px var(--ui-deep);}
+.day.has{color:#fff;font-weight:700;}
+.day .d-emoji{font-size:0;}
+.cal-legend{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px;padding-top:12px;border-top:1px solid var(--line);}
+.legend{display:flex;align-items:center;gap:5px;font-size:11.5px;color:var(--muted);}
+.legend i{width:10px;height:10px;border-radius:50%;display:inline-block;}
+
+.detail{background:var(--card);border-radius:20px;margin-top:14px;padding:16px;box-shadow:0 2px 14px rgba(90,80,160,.06);border:1px solid var(--line);}
+.detail:empty{display:none;}
+.detail .d-head{display:flex;align-items:center;gap:10px;}
+.detail .d-head .d-spr{width:44px;height:44px;flex:0 0 auto;}
+.detail .d-head .d-spr svg{width:100%;height:100%;}
+.detail .d-emo-name{font-size:15px;font-weight:800;}
+.detail .d-date{font-size:12px;color:var(--muted);margin-top:1px;}
+.detail .d-qa{margin-top:12px;}
+.detail .d-qa .qa{margin-bottom:10px;}
+.detail .d-qa .qa .qa-q{font-size:12.5px;color:var(--muted);margin-bottom:3px;line-height:1.5;}
+.detail .d-qa .qa .qa-a{font-size:14.5px;line-height:1.7;white-space:pre-wrap;word-break:break-word;}
+.empty-state{text-align:center;color:var(--muted);padding:30px 10px;font-size:14px;line-height:1.8;}
+
+@media (min-width:768px){
+  .view.active{max-width:520px;margin:0 auto;}
+  .spr{width:120px;}
+}
+</style>
+</head>
+<body>
+
+<!-- ===== 视图：首页 ===== -->
+<section id="viewHome" class="view home active">
+  <div class="home-head">
+    <div class="warm">你的情绪，都值得被看见<small>现在，你是什么心情？</small></div>
+    <button class="records-btn" id="btnRecords" aria-label="查看记录">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+      查看记录
+    </button>
+  </div>
+  <div id="homeSprites"></div>
+  <div class="home-foot">点一个小精灵，告诉它你的此刻。<br>记录，就是照顾自己的第一步<b>。</b></div>
+</section>
+
+<!-- ===== 视图：记录页 ===== -->
+<section id="viewRecord" class="view record">
+  <div class="topbar">
+    <button class="back" id="recBack" aria-label="返回">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+    </button>
+    <div class="title" id="recTopTitle">记录此刻</div>
+    <div class="pad"></div>
+  </div>
+  <div class="rec-em">
+    <div class="big" id="recSprite"></div>
+    <div class="rec-title" id="recTitle"></div>
+    <div class="rec-sub" id="recSub"></div>
+  </div>
+  <div class="rec-qs" id="recQs"></div>
+  <button class="save-btn" id="saveBtn">保存这一刻</button>
+</section>
+
+<!-- ===== 视图：日历页 ===== -->
+<section id="viewCalendar" class="view cal-page">
+  <div class="topbar">
+    <button class="back" id="calBack" aria-label="返回">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+    </button>
+    <div class="title">情绪日历</div>
+    <div class="pad"></div>
+  </div>
+  <div class="cal">
+    <div class="cal-head">
+      <div class="cal-title" id="calTitle"></div>
+      <div class="cal-nav">
+        <button id="calPrev" aria-label="上个月"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg></button>
+        <button id="calNext" aria-label="下个月"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></button>
+      </div>
+    </div>
+    <div class="cal-week"><span>日</span><span>一</span><span>二</span><span>三</span><span>四</span><span>五</span><span>六</span></div>
+    <div class="cal-grid" id="calGrid"></div>
+    <div class="cal-legend" id="calLegend"></div>
+  </div>
+  <div class="detail" id="dayDetail"></div>
+</section>
+
+<!-- ===== 保存反馈浮层 ===== -->
+<div class="feedback" id="feedback">
+  <div class="fb-spr" id="fbSprite"></div>
+  <div class="fb-text">谢谢你愿意把这一刻分享给我</div>
+  <div class="fb-sub" id="fbSub"></div>
+</div>
+
+<script>
+/* ================= 情绪配置 ================= */
+const EMOTIONS = {
+  happy:   { name:'开心', color:'#FFC04A', deep:'#E8A63B', blush:'#FFDfB0', note:'像阳光一样亮起来' },
+  angry:   { name:'生气', color:'#FF7A66', deep:'#EF5C48', blush:'#FFC4B8', note:'心里有团小火苗' },
+  sad:     { name:'悲伤', color:'#6FA3E8', deep:'#5589D2', blush:'#CFE1FA', note:'难过的时刻，我陪你' },
+  calm:    { name:'平静', color:'#6FCFA0', deep:'#4FB785', blush:'#D4F3E3', note:'安安静静也很好' },
+  anxious: { name:'焦虑', color:'#A98FE0', deep:'#8F6FD0', blush:'#E4DCFA', note:'别急，深呼吸一下' }
+};
+const ORDER = ['happy','angry','sad','calm','anxious'];
+
+function questions(em){
+  const n = EMOTIONS[em].name;
+  return [
+    `因为什么${n}？`,
+    `${n}时，印象最深刻的现场情景`,
+    `什么样的类似场景，会触发${n}？`
+  ];
+}
+
+/* ================= 小精灵绘制（同一角色，配色+表情+动作区分） ================= */
+function makeSpriteSVG(em, id){
+  const c = EMOTIONS[em];
+  const F = (x)=>`<path d="${x}" stroke="${c.deep}" stroke-width="4" fill="none" stroke-linecap="round"/>`;
+  let face='', accent='';
+  if(em==='happy'){
+    face = F('M42 61 q7 -10 14 0') + F('M64 61 q7 -10 14 0')
+      + `<path d="M46 74 q14 12 28 0 q-14 7 -28 0 Z" fill="${c.deep}"/>`
+      + `<ellipse cx="38" cy="72" rx="6" ry="3.5" fill="${c.blush}"/>`
+      + `<ellipse cx="82" cy="72" rx="6" ry="3.5" fill="${c.blush}"/>`;
+    accent = `<path d="M92 26 l3 6 6 3 -6 3 -3 6 -3 -6 -6 -3 6 -3 Z" fill="${c.deep}"/>`
+      + `<path d="M26 22 l2.4 4.8 4.8 2.4 -4.8 2.4 -2.4 4.8 -2.4 -4.8 -4.8 -2.4 4.8 -2.4 Z" fill="${c.color}"/>`;
+  } else if(em==='angry'){
+    face = F('M40 54 L54 58') + F('M80 54 L66 58')
+      + `<circle cx="47" cy="66" r="3.6" fill="${c.deep}"/><circle cx="73" cy="66" r="3.6" fill="${c.deep}"/>`
+      + F('M47 80 q13 9 26 0');
+    accent = `<path d="M52 14 a6 6 0 0 1 10 3 a7 7 0 0 1 7 6" stroke="${c.deep}" stroke-width="3.5" fill="none" stroke-linecap="round" opacity=".8"/>`
+      + `<path d="M78 10 a5 5 0 0 1 9 2.5 a6 6 0 0 1 6 5" stroke="${c.color}" stroke-width="3.5" fill="none" stroke-linecap="round" opacity=".8"/>`;
+  } else if(em==='sad'){
+    face = F('M42 58 q7 7 14 0') + F('M64 58 q7 7 14 0')
+      + F('M48 82 q12 4 24 0')
+      + `<path d="M82 66 q5 8 0 14 q-5 -6 0 -14" fill="#BBD6F8"/>`;
+    accent = `<path d="M100 30 l2.6 5.2 5.2 2.6 -5.2 2.6 -2.6 5.2 -2.6 -5.2 -5.2 -2.6 5.2 -2.6 Z" fill="${c.color}" opacity=".7"/>`;
+  } else if(em==='calm'){
+    face = F('M42 62 q7 -6 14 0') + F('M64 62 q7 -6 14 0')
+      + F('M48 76 q12 6 24 0')
+      + `<ellipse cx="38" cy="72" rx="5.5" ry="3.2" fill="${c.blush}"/>`
+      + `<ellipse cx="82" cy="72" rx="5.5" ry="3.2" fill="${c.blush}"/>`;
+    accent = `<path d="M96 24 l2.4 4.8 4.8 2.4 -4.8 2.4 -2.4 4.8 -2.4 -4.8 -4.8 -2.4 4.8 -2.4 Z" fill="${c.deep}" opacity=".8"/>`;
+  } else { /* anxious */
+    face = `<circle cx="47" cy="62" r="5.6" fill="${c.deep}"/><circle cx="73" cy="62" r="5.6" fill="${c.deep}"/>`
+      + `<circle cx="49" cy="64" r="1.9" fill="#fff"/><circle cx="75" cy="64" r="1.9" fill="#fff"/>`
+      + F('M39 52 q7 -4 12 0') + F('M69 52 q7 -4 12 0')
+      + F('M47 78 q4 -4 8 0 q4 4 8 0 q4 -4 8 0');
+    accent = `<path d="M18 46 l4 -7 M10 54 l6 -4 M22 60 l-4 5" stroke="${c.deep}" stroke-width="3" stroke-linecap="round" opacity=".6"/>`
+      + `<path d="M102 48 l4 -7 M108 56 l6 -4" stroke="${c.color}" stroke-width="3" stroke-linecap="round" opacity=".6"/>`;
+  }
+  return `<svg viewBox="0 0 120 120" role="img" aria-label="${c.name}小精灵">
+    <line x1="60" y1="30" x2="60" y2="19" stroke="${c.deep}" stroke-width="3.6" stroke-linecap="round"/>
+    <path d="M60 16 l2.2 4.4 4.4 2.2 -4.4 2.2 -2.2 4.4 -2.2 -4.4 -4.4 -2.2 4.4 -2.2 Z" fill="${c.deep}"/>
+    <path d="M60 30 C80 30 95 45 95 64 C95 80 86 96 67 101 L60 105 L53 101 C34 96 25 80 25 64 C25 45 40 30 60 30 Z" fill="${c.color}"/>
+    <ellipse cx="60" cy="90" rx="24" ry="9" fill="#000" opacity=".07"/>
+    <ellipse cx="45" cy="47" rx="13" ry="8" fill="#fff" opacity=".4"/>
+    <circle cx="23" cy="72" r="5" fill="${c.deep}"/>
+    <circle cx="97" cy="72" r="5" fill="${c.deep}"/>
+    ${face}
+    ${accent}
+  </svg>`;
+}
+
+/* ================= 数据 ================= */
+const KEY = 'emoji_sprite_records_v1';
+function getRecords(){
+  try{ return JSON.parse(localStorage.getItem(KEY)) || []; }catch(e){ return []; }
+}
+function saveRecord(em, q){
+  const recs = getRecords();
+  recs.push({ id:Date.now(), ts:Date.now(), date:todayStr(), emotion:em, q:q });
+  localStorage.setItem(KEY, JSON.stringify(recs));
+}
+function recsByDate(date){
+  return getRecords().filter(r=>r.date===date);
+}
+
+/* ================= 工具 ================= */
+const $ = (s)=>document.querySelector(s);
+function pad(n){ return String(n).padStart(2,'0'); }
+function dateStrOf(y,m,d){ return `${y}-${pad(m+1)}-${pad(d)}`; }
+function todayStr(){ const d=new Date(); return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`; }
+function parseDate(s){ const a=s.split('-').map(Number); return new Date(a[0], a[1]-1, a[2]); }
+function hideViews(){ ['viewHome','viewRecord','viewCalendar'].forEach(id=>$('#'+id).classList.remove('active')); }
+function setActive(id){ hideViews(); $('#'+id).classList.add('active'); window.scrollTo(0,0); }
+
+function showToast(msg){
+  let t=$('#toast');
+  if(!t){ t=document.createElement('div'); t.id='toast'; document.body.appendChild(t); }
+  t.textContent=msg;
+  t.style.cssText='position:fixed;left:50%;bottom:80px;transform:translateX(-50%);background:rgba(50,48,72,.92);color:#fff;font-size:13.5px;padding:10px 18px;border-radius:999px;z-index:99;box-shadow:0 6px 20px rgba(0,0,0,.18);transition:opacity .3s;max-width:80vw;text-align:center;';
+  t.style.opacity='1';
+  clearTimeout(t._t);
+  t._t=setTimeout(()=>{ t.style.opacity='0'; }, 1800);
+}
+
+/* ================= 首页 ================= */
+function renderHome(){
+  const box = $('#homeSprites'); box.innerHTML='';
+  const rows = [ORDER.slice(0,3), ORDER.slice(3)];
+  rows.forEach(row=>{
+    const r = document.createElement('div'); r.className='spr-row';
+    row.forEach(em=>{
+      const c=EMOTIONS[em];
+      const cell=document.createElement('div');
+      cell.className='spr s-'+em; cell.dataset.em=em;
+      cell.innerHTML=`<div class="spr-body">${makeSpriteSVG(em)}</div>
+        <div class="spr-name">${c.name}</div>
+        <div class="spr-hint">${c.note}</div>`;
+      cell.addEventListener('click',()=>{ location.hash='#/record/'+em; });
+      r.appendChild(cell);
+    });
+    box.appendChild(r);
+  });
+}
+
+/* ================= 记录页 ================= */
+let curEm='happy';
+function renderRecord(em){
+  curEm=em;
+  const c=EMOTIONS[em];
+  $('#recSprite').innerHTML = `<div class="big">${makeSpriteSVG(em)}</div>`;
+  $('#recTitle').textContent = '记录 · '+c.name;
+  $('#recSub').textContent = '回答 3 个问题，把此刻留下来';
+  $('#recTopTitle').textContent = c.name+' 的记录';
+  const qs=questions(em), box=$('#recQs'); box.innerHTML='';
+  qs.forEach((q,i)=>{
+    const card=document.createElement('div'); card.className='qcard';
+    card.innerHTML=`<div class="q-label"><span class="q-num" style="background:${c.color}">${i+1}</span><span>${q}</span></div>
+      <textarea placeholder="写下你的想法…（可留空）"></textarea>`;
+    box.appendChild(card);
+  });
+  $('#saveBtn').style.background = c.color;
+}
+
+function saveNow(){
+  const ta = $('#recQs').querySelectorAll('textarea');
+  const answers = Array.from(ta).map(t=>t.value.trim());
+  if(answers.every(a=>a==='')){
+    showToast('先写点什么，再保存吧');
+    if(ta[0]) ta[0].focus();
+    return;
+  }
+  saveRecord(curEm, answers);
+  // 反馈
+  $('#fbSprite').innerHTML = makeSpriteSVG(curEm);
+  const d=parseDate(todayStr());
+  $('#fbSub').textContent = '已记入 '+d.getMonth()+1+'月'+d.getDate()+'日';
+  $('#feedback').classList.add('show');
+  const done=()=>{ $('#feedback').classList.remove('show'); location.hash='#/'; };
+  $('#feedback').onclick=done;
+  setTimeout(done, 2000);
+}
+
+/* ================= 日历 ================= */
+let calY=new Date().getFullYear(), calM=new Date().getMonth(), selDate=null;
+function renderCalendar(){
+  const title=$('#calTitle'); title.textContent=`${calY}年 ${calM+1}月`;
+  // 图例
+  const monthRecs = getRecords().filter(r=>{
+    const d=parseDate(r.date); return d.getFullYear()===calY && d.getMonth()===calM;
+  });
+  const legend=$('#calLegend'); legend.innerHTML='';
+  ORDER.forEach(em=>{
+    if(monthRecs.some(r=>r.emotion===em)){
+      const s=document.createElement('span'); s.className='legend';
+      s.innerHTML=`<i style="background:${EMOTIONS[em].color}"></i>${EMOTIONS[em].name}`;
+      legend.appendChild(s);
+    }
+  });
+  // 网格
+  const grid=$('#calGrid'); grid.innerHTML='';
+  const first=new Date(calY,calM,1).getDay();
+  const days=new Date(calY,calM+1,0).getDate();
+  const today=todayStr();
+  for(let i=0;i<first;i++){ const e=document.createElement('div'); e.className='day empty'; grid.appendChild(e); }
+  for(let d=1;d<=days;d++){
+    const ds=dateStrOf(calY,calM,d);
+    const recs=recsByDate(ds);
+    const cell=document.createElement('div');
+    let cls='day';
+    if(recs.length) cls+=' has';
+    if(ds===today) cls+=' today';
+    if(ds<today && !recs.length) cls+=' out';
+    cell.className=cls;
+    if(recs.length){
+      const last=recs[recs.length-1];
+      cell.style.background=EMOTIONS[last.emotion].color;
+    }
+    cell.textContent=d;
+    cell.dataset.date=ds;
+    cell.addEventListener('click',()=>selectDay(ds));
+    grid.appendChild(cell);
+  }
+  // 已选详情
+  renderDetail(selDate);
+}
+function selectDay(ds){
+  selDate=ds;
+  const recs=recsByDate(ds);
+  renderDetail(recs.length?ds:null);
+}
+function renderDetail(ds){
+  const box=$('#dayDetail');
+  if(!ds || !recsByDate(ds).length){ box.innerHTML=''; return; }
+  const recs=recsByDate(ds);
+  const d=parseDate(ds);
+  const head=recs.map(r=>{
+    const c=EMOTIONS[r.emotion];
+    const qs=questions(r.emotion);
+    const qa = r.q.map((a,i)=> a ? `<div class="qa"><div class="qa-q">${qs[i]||('问题'+(i+1))}</div><div class="qa-a">${a}</div></div>` : '').join('');
+    return `<div class="detail">
+      <div class="d-head">
+        <div class="d-spr">${makeSpriteSVG(r.emotion)}</div>
+        <div><div class="d-emo-name" style="color:${c.deep}">${c.name} 小精灵</div>
+        <div class="d-date">${d.getMonth()+1}月${d.getDate()}日</div></div>
+      </div>
+      <div class="d-qa">${qa}</div>
+    </div>`;
+  }).join('');
+  box.innerHTML=head;
+}
+
+/* ================= 路由 ================= */
+function route(){
+  const h=location.hash.replace(/^#\/?/,'');
+  if(h.startsWith('record/')){
+    const em=h.split('/')[1];
+    if(EMOTIONS[em]){ setActive('viewRecord'); renderRecord(em); }
+    else { setActive('viewHome'); renderHome(); }
+  } else if(h==='calendar'){
+    setActive('viewCalendar'); renderCalendar();
+  } else {
+    setActive('viewHome'); renderHome();
+  }
+}
+
+/* ================= 绑定 ================= */
+$('#btnRecords').addEventListener('click',()=>{ location.hash='#/calendar'; });
+$('#recBack').addEventListener('click',()=>{ location.hash='#/'; });
+$('#calBack').addEventListener('click',()=>{ location.hash='#/'; });
+$('#saveBtn').addEventListener('click',saveNow);
+$('#calPrev').addEventListener('click',()=>{ selDate=null; calM--; if(calM<0){calM=11;calY--;} renderCalendar(); });
+$('#calNext').addEventListener('click',()=>{ selDate=null; calM++; if(calM>11){calM=0;calY++;} renderCalendar(); });
+
+window.addEventListener('hashchange',route);
+route();
+</script>
+
+</body>
+</html>
